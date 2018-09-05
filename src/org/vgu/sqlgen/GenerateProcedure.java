@@ -5,14 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -36,7 +30,6 @@ import net.sf.jsqlparser.expression.WhenClause;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
-import net.sf.jsqlparser.parser.JJTCCJSqlParserState;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -143,11 +136,7 @@ public class GenerateProcedure {
 		
 		SQLCreateFunction create1 = new SQLCreateFunction();
 		create1.setName("auth_read_name");
-		//create1.setParameters(proc.getParameters());
-		//for(int i=0; i<plainSelect.get)
-		//create1.getParameters().set(0, self_id);
-
-//		System.out.println(proc.getParameters());
+		
 		
 		create1.setReturnType("INT DETERMINISTIC");
 		create1.setIfclause(ifList.get(0));
@@ -269,18 +258,6 @@ public class GenerateProcedure {
 		String a = s.substring(s.indexOf("BEGIN")+6, s.indexOf("END"));
 		return a;
 	}
-	
-//	public List<Select> getSelectStatements(String a) throws JSQLParserException {
-//		List<Select> list = new ArrayList<Select>();
-//		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-//		String[] parts = a.split(";");
-//		for(int i=0; i<parts.length; i++) {
-//			Select sec = (Select) parserManager.parse(new StringReader(parts[i]));
-//			list.add(sec);
-//		}
-//		return list;
-//	}
-	
 	
 	
 	public PlainSelect inputQuery(PlainSelect plainSelect) {
@@ -422,12 +399,7 @@ public class GenerateProcedure {
 			fu.setParameters(ep);
 			case_item.setExpression(fu);
 			
-			//Function a = new Function();
-			
-			
 		return case_item;
 		}
-		//return item;
-		
 	}
 }
