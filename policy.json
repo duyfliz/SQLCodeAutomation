@@ -1,0 +1,13 @@
+{
+	"data" : [
+		{"role":1, "property":"given_name", "check":true},
+		{"role":1, "property":"middle_name", "check":true},
+		{"role":1, "property":"family_name", "check":true},
+		{"role":2, "property":"given_name", "check":false},
+		{"role":2, "property":"middle_name", "check":false},
+		{"role":2, "property":"family_name", "check":false},
+		{"role":3, "property":"given_name", "check":false},
+		{"role":3, "property":"middle_name", "check":false},
+		{"role":3, "property":"family_name", "check":false}		
+	]
+}
