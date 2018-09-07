@@ -42,7 +42,10 @@ public class ElseClause {
 
 		if (returnValue != null) {
 			s += "RETURN " + "(" + returnValue + ");";
+			s += "\nEND IF;";			
 		}
+		
+
 		return s;	
 	}
 

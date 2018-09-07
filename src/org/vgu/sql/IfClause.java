@@ -9,9 +9,10 @@ public class IfClause {
 	private ThenClause Then;
 	private IfCondition condition;
 	private String SetClause;
-	//private List<ElseClause> ElseList = new ArrayList<ElseClause>();;
+	private List<ElseClause> ElseList = new ArrayList<ElseClause>();
+
 	private ElseClause elseclause = new ElseClause();
-	private IfClause anotherIf;
+
 	private SQLCreateFunction func;
 	
 	public IfCondition getCondition() {
@@ -50,12 +51,7 @@ public class IfClause {
 		SetClause = setClause;
 	}
 	
-	public IfClause getAnotherIf() {
-		return anotherIf;
-	}
-	public void setAnotherIf(IfClause anotherIf) {
-		this.anotherIf = anotherIf;
-	}
+	
 //	public List<ElseClause> getElseList() {
 //		return ElseList;
 //	}
@@ -63,11 +59,20 @@ public class IfClause {
 //		ElseList = elseList;
 //	}
 	
+
 	public ElseClause getElseclause() {
 		return elseclause;
 	}
 	public void setElseclause(ElseClause elseclause) {
 		this.elseclause = elseclause;
+	}
+	
+	public List<ElseClause> getElseList() {
+		return ElseList;
+	}
+
+	public void setElseList(List<ElseClause> elseList) {
+		ElseList = elseList;
 	}
 	
 	public String toString(){
@@ -87,7 +92,24 @@ public class IfClause {
 		if (elseclause != null || elseclause.toString() != "") {
 			str += elseclause.toString();
 		}
-		str += "\nEND IF;";
+//		else if (elseIfClause != null) {
+//			str += elseIfClause.toString();
+//		}
+		
+		if (ElseList != null){
+			for (int i = 0; i < ElseList.size(); i++) {
+				str += ElseList.get(i).toString();
+//				if (i == ElseList.size()) {
+//					str += "\nENDIF;";
+//				}
+			}
+		}
+//		}else 
+
+//		if (elseclause != null && elseclause.toString() != "" && ElseList != null){
+//			str += "\nENDIF;";
+//		}
+		
 		return str;
 	}
 }

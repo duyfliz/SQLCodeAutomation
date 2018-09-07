@@ -7,6 +7,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -21,25 +22,15 @@ import org.vgu.sql.SQLCreateProcedure;
 import org.vgu.sql.ThenClause;
 
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Alias;
-import net.sf.jsqlparser.expression.CaseExpression;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Function;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.WhenClause;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
-import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.statement.select.SubSelect;
 
-public class GenerateProcedure {
+public class Demo {
 	/*Function for the creation of an SQL function*/
 	public static SQLCreateFunction auth_function(JSONArray policy, int role, String property, SQLCreateFunction func) {
 		Iterator<?> i = policy.iterator();
@@ -121,9 +112,9 @@ public class GenerateProcedure {
 		
 
 		List <IfClause> ifList = new ArrayList<>();
-		ifList.add(createRoleChecking("caller_role = 2", "1" ,exMsg,sub_param_list,"auth_read_name_lecturer"));
-		ifList.add(createRoleChecking("caller_role = 3", "0" ,exMsg,sub_param_list,"auth_read_name_student"));
-		ifList.add(createRoleChecking("caller_role = 1", "0" ,exMsg,sub_param_list,"auth_read_name_admin"));
+		ifList.add(createIfCondition("caller_role = 2", "1" ,exMsg,sub_param_list,"auth_read_name_lecturer"));
+		ifList.add(createIfCondition("caller_role = 3", "0" ,exMsg,sub_param_list,"auth_read_name_student"));
+		ifList.add(createIfCondition("caller_role = 1", "0" ,exMsg,sub_param_list,"auth_read_name_admin"));
 		
 		for (int i = 0 ; i < ifList.size() ; i++) {
 			if (i < ifList.size()-1) {
@@ -148,7 +139,7 @@ public class GenerateProcedure {
 		return create1;
 	}
 	
-	public static IfClause createRoleChecking(String caller_role, String returnValue,ExceptionMsg exMsg,List<Parameter> sub_param_list,
+	public static IfClause createIfCondition(String caller_role, String returnValue,ExceptionMsg exMsg,List<Parameter> sub_param_list,
 			String funcName) {
 		
 		IfClause ifCls = new IfClause();
@@ -179,7 +170,34 @@ public class GenerateProcedure {
 		
 		return ifCls;
 	}
+	public static void main(String[] args) throws JSQLParserException, FileNotFoundException, IOException, ParseException {
+		
+		Object obj = new JSONParser().parse(new FileReader("E:\\Nam 3\\Thesis\\policy.json"));
+		JSONObject jsonObject = (JSONObject) obj;
+		JSONArray policy = (JSONArray) jsonObject.get("data");
+		
+		String s = "CREATE PROCEDURE GetCourseStudentList(IN course_id INT, IN caller_id INT)\r\n" + 
+				"BEGIN\r\n" + 
+				"    SELECT family_name \r\n" + 
+				"    FROM reg_user\r\n" + 
+				"    INNER JOIN \r\n" + 
+				"    (SELECT reg_user FROM Student\r\n" + 
+				"    INNER JOIN\r\n" + 
+				"    (SELECT student FROM course_student\r\n" + 
+				"    WHERE course_student.course = course_id) AS TEMP_1\r\n" + 
+				"    ON student_id = TEMP_1.student) AS TEMP_2\r\n" + 
+				"    ON TEMP_2.reg_user = reg_user_id;\r\n" + 
+				"END //";
+		
+		Demo demo = new Demo();
+		
+		SQLCreateProcedure proc = demo.parseProcedure(s);
+		SQLCreateProcedure new_proc = demo.createCustomProcedure(proc, policy);
+		System.out.println(new_proc.toString());
+	}
+	
 	public SQLCreateProcedure createCustomProcedure(SQLCreateProcedure proc, JSONArray policy) throws JSQLParserException {
+		SQLVisitorSecure secure = new SQLVisitorSecure();
 		SQLCreateProcedure procedure = new SQLCreateProcedure();
 		procedure.setName(proc.getName());
 		procedure.setParameters(proc.getParameters());
@@ -195,30 +213,21 @@ public class GenerateProcedure {
 		PlainSelect roleSelect = this.inputQuery(plainSelect);
 		
 		//create second statement
-		PlainSelect caseSelect = this.modifiedQuery(plainSelect, proc);
+		SQLSelect sqlselect = new SQLSelect();
+		sqlselect.setPlainSelect(plainSelect);
+		sqlselect.setProc(proc);
+		sqlselect.accept(secure);
+		PlainSelect securedSelect = sqlselect.getPlainSelect();
 		
 		List<String> bodylist = new ArrayList<>();
 		bodylist.add(roleSelect.toString().concat(";"));
-		bodylist.add(caseSelect.toString().concat(";"));
+		bodylist.add(securedSelect.toString().concat(";"));
 		procedure.setBody(bodylist);
+		//System.out.println(role_checking_function(policy, procedure));
 		System.out.println(role_checking_function(policy, procedure));
 		return procedure;
 	}
 	
-//	public static void main(String[] args) throws JSQLParserException, FileNotFoundException, IOException, ParseException {
-//		Object obj = new JSONParser().parse(new FileReader("E:\\Nam 3\\Thesis\\policy.json"));
-//		JSONObject jsonObject = (JSONObject) obj;
-//		JSONArray policy = (JSONArray) jsonObject.get("data");
-//		String s = "CREATE PROCEDURE GetStudentListA()\r\n" + 
-//				"BEGIN\r\n" + 
-//				"SELECT MIN(Price) AS SmallestPrice\r\n" + 
-//				"FROM Products;" +
-//				"END //";
-//		GenerateProcedure gp = new GenerateProcedure();
-//		SQLCreateProcedure proc = gp.parseProcedure(s);
-//		SQLCreateProcedure new_proc = gp.createCustomProcedure(proc, policy);
-//		System.out.println(new_proc.toString());
-//	}
 	
 	public SQLCreateProcedure parseProcedure(String s) {
 		SQLCreateProcedure proc = new SQLCreateProcedure();
@@ -248,8 +257,7 @@ public class GenerateProcedure {
 		return a;
 	}
 	
-	
-	public PlainSelect inputQuery(PlainSelect plainSelect) {
+public PlainSelect inputQuery(PlainSelect plainSelect) {
 		
 		/*Create first select statement*/
 		PlainSelect roleSelect = new PlainSelect();
@@ -280,121 +288,5 @@ public class GenerateProcedure {
 		roleSelect.setFromItem(plainSelect.getFromItem());
 		return roleSelect;
 		
-	}
-	
-	public PlainSelect modifiedQuery(PlainSelect plainSelect, SQLCreateProcedure proc) {
-		PlainSelect caseSelect = new PlainSelect();
-		caseSelect = plainSelect;
-		if(caseSelect.getJoins() != null) {
-			for(int i=0; i< caseSelect.getJoins().size(); i++) {
-				if(caseSelect.getJoins().get(i).getRightItem()
-						instanceof SubSelect) {
-					SubSelect sub = (SubSelect)caseSelect.getJoins().get(i).getRightItem();
-					PlainSelect ps = (PlainSelect) sub.getSelectBody();
-					this.modifiedQuery(ps, proc);
-				}
-			}
-		}
-		
-		List<SelectItem> list = new ArrayList<SelectItem>();
-				
-		Column caller_role = new Column();
-		caller_role.setColumnName("caller_role");
-		
-		Column caller_id = new Column();
-		caller_id.setColumnName("caller_id");
-		
-		Column self_id = new Column();
-		self_id.setColumnName("self_id");
-		
-		Function func1 = new Function();
-		func1.setName("auth_read_name");
-		List<Expression> column_list = new ArrayList<Expression>();
-		column_list.add(self_id);
-		column_list.add(caller_id);
-		column_list.add(caller_role);
-		
-		
-		for(int i=0; i<proc.getParameters().size(); i++) {
-			if(!proc.getParameters().get(i).getName().trim().equals("caller_id")
-					&& !proc.getParameters().get(i).getName().trim().equals("self_id")
-					&& !proc.getParameters().get(i).getName().trim().equals("caller_role")) {
-				String col_name = proc.getParameters().get(i).getName().trim();
-				Column ct = new Column();
-				ct.setColumnName(col_name);
-				column_list.add(ct);
-			}
-		}
-		
-		ExpressionList el1 = new ExpressionList();
-		el1.setExpressions(column_list);
-		func1.setParameters(el1);
-		LongValue val = new LongValue(1);
-		
-
-		Table table = (Table) plainSelect.getFromItem();
-		for(int i=0; i<plainSelect.getSelectItems().size(); i++) {
-			SelectExpressionItem example_item = this.createCASE((SelectExpressionItem)plainSelect.getSelectItems().get(i),
-					table,func1, val);
-			list.add(example_item);
-		}
-		
-		caseSelect.setSelectItems(list);
-		return caseSelect;
-	}
-	
-	public SelectExpressionItem createCASE(SelectExpressionItem item, Table table, Function function, LongValue val) {
-		SelectExpressionItem case_item = new SelectExpressionItem();
-		CaseExpression caseExpression = new CaseExpression();
-		if (!(item.getExpression() instanceof Function)) {
-			Column col = (Column) item.getExpression();
-			Alias name = new Alias(col.getColumnName());
-			case_item.setAlias(name);
-			
-			WhenClause when = new WhenClause();
-			List<WhenClause> when_clauses = new ArrayList<WhenClause>();
-			when_clauses.add(when);
-			col.setTable(table);
-			when.setWhenExpression(val);
-			when.setThenExpression(col);
-			caseExpression.setWhenClauses(when_clauses);
-			caseExpression.setSwitchExpression(function);
-			case_item.setExpression(caseExpression);
-			return case_item;
-		}
-		else {
-			Function func = (Function) (item.getExpression());		
-			Column col = (Column) func.getParameters().getExpressions().get(0);
-			Alias name = new Alias(col.getColumnName());
-			case_item.setAlias(name);
-			
-			WhenClause when = new WhenClause();
-			List<WhenClause> when_clauses = new ArrayList<WhenClause>();
-			when_clauses.add(when);
-			col.setTable(table);
-			when.setWhenExpression(val);
-			when.setThenExpression(col);
-			caseExpression.setWhenClauses(when_clauses);
-			caseExpression.setSwitchExpression(function);
-			case_item.setExpression(caseExpression);
-			
-			
-			Function fu = new Function ();
-			fu.setName(func.getName());
-			ExpressionList ep = new ExpressionList();
-			List<Expression> listE = new ArrayList<>();
-			listE.add(case_item.getExpression());
-			ep.setExpressions(listE);
-			fu.setParameters(ep);
-			case_item.setExpression(fu);
-			
-		return case_item;
-		}
-	}
-	
-	public AllColumns createAllColumnCase() {
-		AllColumns allColumns = new AllColumns();
-		//allColumns.
-		return allColumns;
 	}
 }
