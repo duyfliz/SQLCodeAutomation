@@ -20,7 +20,8 @@ public class SQLSelect implements SQLStatement {
 
 	PlainSelect plainSelect;
 	static SQLCreateProcedure proc;
-	Function function;
+	SQLSelectExpressionItem sqlSelectExpressionItem;
+	
 	public PlainSelect getPlainSelect() {
 		return plainSelect;
 	}
@@ -46,14 +47,17 @@ public class SQLSelect implements SQLStatement {
 	@Override
 	public void accept(SQLVisitor visitor) {
 		List<SelectItem> list = new ArrayList<SelectItem>();
-		this.createFunction();
+		sqlSelectExpressionItem = new SQLSelectExpressionItem();
 		for(int i=0; i<plainSelect.getSelectItems().size(); i++) {
-			if(plainSelect.getSelectItems().get(i) instanceof SelectExpressionItem) {
-				
+			if(plainSelect.getSelectItems().get(i) instanceof SelectExpressionItem) {			
 				
 				SelectExpressionItem sei = (SelectExpressionItem) plainSelect.getSelectItems().get(i);
 				Table table = (Table) plainSelect.getFromItem();
-				SelectExpressionItem temp = visitor.visit(sei, table, function);
+				sqlSelectExpressionItem.setTable(table);
+				sqlSelectExpressionItem.setFunction(this.createFunction());
+				sqlSelectExpressionItem.setItem(sei);
+				sqlSelectExpressionItem.accept(visitor);
+				SelectExpressionItem temp = sqlSelectExpressionItem.getItem();
 				list.add(temp);
 			}
 			else if (plainSelect.getSelectItems().get(i) instanceof AllColumns) {
@@ -62,12 +66,12 @@ public class SQLSelect implements SQLStatement {
 				list.add(cols);
 			}
 		}
-		visitor.visit(plainSelect);
+		visitor.visit(this);
 		plainSelect.setSelectItems(list);
 	}
 	
-	public void createFunction() {
-		function = new Function();
+	public Function createFunction() {
+		Function function = new Function();
 		function.setName("auth_read_name");
 		
 		Column caller_role = new Column();
@@ -99,5 +103,6 @@ public class SQLSelect implements SQLStatement {
 		ExpressionList el1 = new ExpressionList();
 		el1.setExpressions(column_list);
 		function.setParameters(el1);
+		return function;
 	}
 }

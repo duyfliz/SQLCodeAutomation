@@ -3,7 +3,6 @@ package org.vgu.sqlgen;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.vgu.sql.SQLCreateProcedure;
 
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.CaseExpression;
@@ -22,16 +21,29 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 public class SQLVisitorSecure implements SQLVisitor {
 
 	@Override
-	public SelectExpressionItem visit(SelectExpressionItem item, Table table, Function function) {
+	public SelectExpressionItem visit(SQLSelectExpressionItem ex) {
+		Function function = ex.getFunction();
+		SelectExpressionItem item = ex.getItem();
+		Table table = ex.getTable();
 		SelectExpressionItem case_item = new SelectExpressionItem();
 		CaseExpression caseExpression = new CaseExpression();
 		
 		if (!(item.getExpression() instanceof Function)) {
-//			if(item.getExpression().)
+
 			Column col = (Column) item.getExpression();
-			col.setTable(table);
-			Alias name = new Alias(col.getColumnName());
-			case_item.setAlias(name);
+			
+			if(col.getTable().getFullyQualifiedName().isEmpty()) {
+				col.setTable(table);
+				Alias name = new Alias(col.getColumnName());
+				case_item.setAlias(name);
+				
+			} else {
+				Alias name = new Alias(col.getFullyQualifiedName());
+				case_item.setAlias(name);
+			}
+			
+			
+			
 			
 			WhenClause when = new WhenClause();
 			List<WhenClause> when_clauses = new ArrayList<WhenClause>();
@@ -75,7 +87,6 @@ public class SQLVisitorSecure implements SQLVisitor {
 			}
 		}
 		return case_item;
-		
 	}
 
 	@Override
@@ -85,7 +96,8 @@ public class SQLVisitorSecure implements SQLVisitor {
 	}
 
 	@Override
-	public void visit(PlainSelect plainSelect) {
+	public void visit(SQLSelect select) {
+		PlainSelect plainSelect = select.getPlainSelect();
 		if(plainSelect.getJoins() == null) {
 			
 		}
@@ -94,14 +106,15 @@ public class SQLVisitorSecure implements SQLVisitor {
 				if(plainSelect.getJoins().get(i).getRightItem() instanceof SubSelect) {
 					SubSelect sub = (SubSelect) plainSelect.getJoins().get(i).getRightItem();
 					PlainSelect plainSelect2 = (PlainSelect) sub.getSelectBody();
-					SQLSelect select = new SQLSelect();
-					select.setPlainSelect(plainSelect2);
-					select.accept(this);
+					SQLSelect select2 = new SQLSelect();
+					select2.setPlainSelect(plainSelect2);
+					select2.accept(this);
 				}
 				else {
 					
 				}
 			}
 		}
-	}	
+	}
+
 }

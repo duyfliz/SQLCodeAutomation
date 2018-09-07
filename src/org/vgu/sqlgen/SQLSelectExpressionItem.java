@@ -18,9 +18,26 @@ public class SQLSelectExpressionItem implements SQLStatement {
 		this.item = item;
 	}
 
+	
+	public Table getTable() {
+		return table;
+	}
+
+	public void setTable(Table table) {
+		this.table = table;
+	}
+
+	public Function getFunction() {
+		return function;
+	}
+
+	public void setFunction(Function function) {
+		this.function = function;
+	}
+
 	@Override
 	public void accept(SQLVisitor visitor) {
-		visitor.visit(item, table, function);
+		this.item = visitor.visit(this);
 	}
 
 }

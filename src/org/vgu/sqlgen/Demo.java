@@ -178,29 +178,15 @@ public class Demo {
 		
 		String s = "CREATE PROCEDURE GetCourseStudentList(IN course_id INT, IN caller_id INT, name VARCHAR)\r\n" + 
 				"BEGIN\r\n" +
-				"SELECT \r\n" + 
-				"  DISTINCT\r\n" + 
-				"  t.id,\r\n" + 
-				"  t.tag, \r\n" + 
-				"  c.title AS Category\r\n" + 
-				"FROM\r\n" + 
-				"  tags2Articles t2a \r\n" + 
-				"  INNER JOIN tags t ON t.id = t2a.idTag\r\n" + 
-				"  INNER JOIN categories c ON t.tagCategory = c.id\r\n" + 
-				"  /* Subquery join returns article ids having all 3 tags you filtered */\r\n" + 
-				"  /* Joining against tags2articles again will get the remaining tags for these articles */\r\n" + 
-				"  INNER JOIN (\r\n" + 
-				"    SELECT\r\n" + 
-				"     a.id \r\n" + 
-				"    FROM \r\n" + 
-				"     articles AS a\r\n" + 
-				"     JOIN tags2articles AS ta  ON a.id=ta.idArticle\r\n" + 
-				"     JOIN tags AS tsub ON ta.idTag=tsub.id\r\n" + 
-				"    WHERE \r\n" + 
-				"      tsub.id IN (12,13,16) \r\n" + 
-				"    GROUP BY a.id\r\n" + 
-				"    HAVING COUNT(DISTINCT tsub.id)=3 \r\n" + 
-				"  ) asub ON t2a.idArticle = asub.id;" + 
+				"SELECT family_name \r\n" + 
+				"    FROM reg_user\r\n" + 
+				"    INNER JOIN \r\n" + 
+				"    (SELECT reg_user FROM Student\r\n" + 
+				"    INNER JOIN\r\n" + 
+				"    (SELECT student FROM course_student\r\n" + 
+				"    WHERE course_student.course = course_id) AS TEMP_1\r\n" + 
+				"    ON student_id = TEMP_1.student) AS TEMP_2\r\n" + 
+				"    ON TEMP_2.reg_user = reg_user_id;" + 
 				"END //";
 		
 		Demo demo = new Demo();
