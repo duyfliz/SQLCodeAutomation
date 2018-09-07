@@ -177,16 +177,9 @@ public class Demo {
 		JSONArray policy = (JSONArray) jsonObject.get("data");
 		
 		String s = "CREATE PROCEDURE GetCourseStudentList(IN course_id INT, IN caller_id INT)\r\n" + 
-				"BEGIN\r\n" + 
-				"    SELECT family_name \r\n" + 
-				"    FROM reg_user\r\n" + 
-				"    INNER JOIN \r\n" + 
-				"    (SELECT reg_user FROM Student\r\n" + 
-				"    INNER JOIN\r\n" + 
-				"    (SELECT student FROM course_student\r\n" + 
-				"    WHERE course_student.course = course_id) AS TEMP_1\r\n" + 
-				"    ON student_id = TEMP_1.student) AS TEMP_2\r\n" + 
-				"    ON TEMP_2.reg_user = reg_user_id;\r\n" + 
+				"BEGIN\r\n" +
+				" SELECT * FROM Customers\r\n" + 
+				"WHERE City LIKE 'ber%';" + 
 				"END //";
 		
 		Demo demo = new Demo();

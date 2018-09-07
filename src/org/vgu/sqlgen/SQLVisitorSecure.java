@@ -41,7 +41,37 @@ public class SQLVisitorSecure implements SQLVisitor {
 			caseExpression.setSwitchExpression(function);
 			case_item.setExpression(caseExpression);
 		} else {
+		
+			Function func = (Function) (item.getExpression());		
+			if(func.isAllColumns()) {
+				this.visit(new AllColumns());
+				case_item.setExpression(func);
+			}
+			else {
+			Column col = (Column) func.getParameters().getExpressions().get(0);
+			Alias name = new Alias(col.getColumnName());
+			case_item.setAlias(name);
 			
+			WhenClause when = new WhenClause();
+			List<WhenClause> when_clauses = new ArrayList<WhenClause>();
+			when_clauses.add(when);
+			col.setTable(table);
+			when.setWhenExpression(new LongValue(1));
+			when.setThenExpression(col);
+			caseExpression.setWhenClauses(when_clauses);
+			caseExpression.setSwitchExpression(function);
+			case_item.setExpression(caseExpression);
+			
+			
+			Function fu = new Function ();
+			fu.setName(func.getName());
+			ExpressionList ep = new ExpressionList();
+			List<Expression> listE = new ArrayList<>();
+			listE.add(case_item.getExpression());
+			ep.setExpressions(listE);
+			fu.setParameters(ep);
+			case_item.setExpression(fu);
+			}
 		}
 		return case_item;
 		
@@ -49,7 +79,7 @@ public class SQLVisitorSecure implements SQLVisitor {
 
 	@Override
 	public AllColumns visit(AllColumns column) {
-		// TODO Auto-generated method stub
+		
 		return column;
 	}
 
