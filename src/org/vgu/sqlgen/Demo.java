@@ -133,9 +133,9 @@ public class Demo {
 		create1.setReturnType("INT DETERMINISTIC");
 		create1.setIfclause(ifList.get(0));
 		create1.setParameters(param_list);
-		System.out.println(GenerateProcedure.auth_function(policy, 1, "given_name", create1));
-		System.out.println(GenerateProcedure.auth_function(policy, 2, "family_name", create1));
-		System.out.println(GenerateProcedure.auth_function(policy, 3, "middle_name", create1));
+		System.out.println(Demo.auth_function(policy, 1, "given_name", create1));
+		System.out.println(Demo.auth_function(policy, 2, "family_name", create1));
+		System.out.println(Demo.auth_function(policy, 3, "middle_name", create1));
 		return create1;
 	}
 	
@@ -176,10 +176,31 @@ public class Demo {
 		JSONObject jsonObject = (JSONObject) obj;
 		JSONArray policy = (JSONArray) jsonObject.get("data");
 		
-		String s = "CREATE PROCEDURE GetCourseStudentList(IN course_id INT, IN caller_id INT)\r\n" + 
+		String s = "CREATE PROCEDURE GetCourseStudentList(IN course_id INT, IN caller_id INT, name VARCHAR)\r\n" + 
 				"BEGIN\r\n" +
-				" SELECT * FROM Customers\r\n" + 
-				"WHERE City LIKE 'ber%';" + 
+				"SELECT \r\n" + 
+				"  DISTINCT\r\n" + 
+				"  t.id,\r\n" + 
+				"  t.tag, \r\n" + 
+				"  c.title AS Category\r\n" + 
+				"FROM\r\n" + 
+				"  tags2Articles t2a \r\n" + 
+				"  INNER JOIN tags t ON t.id = t2a.idTag\r\n" + 
+				"  INNER JOIN categories c ON t.tagCategory = c.id\r\n" + 
+				"  /* Subquery join returns article ids having all 3 tags you filtered */\r\n" + 
+				"  /* Joining against tags2articles again will get the remaining tags for these articles */\r\n" + 
+				"  INNER JOIN (\r\n" + 
+				"    SELECT\r\n" + 
+				"     a.id \r\n" + 
+				"    FROM \r\n" + 
+				"     articles AS a\r\n" + 
+				"     JOIN tags2articles AS ta  ON a.id=ta.idArticle\r\n" + 
+				"     JOIN tags AS tsub ON ta.idTag=tsub.id\r\n" + 
+				"    WHERE \r\n" + 
+				"      tsub.id IN (12,13,16) \r\n" + 
+				"    GROUP BY a.id\r\n" + 
+				"    HAVING COUNT(DISTINCT tsub.id)=3 \r\n" + 
+				"  ) asub ON t2a.idArticle = asub.id;" + 
 				"END //";
 		
 		Demo demo = new Demo();
@@ -198,23 +219,27 @@ public class Demo {
 		procedure.setDeclareVariables("caller_role INT DEFAULT 0");
 		
 		CCJSqlParserManager parserManager = new CCJSqlParserManager();
-		Select select = (Select) parserManager.parse(new StringReader(proc.getBody().get(0)));
-		PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
-		
-		
-		//create first statement
-		PlainSelect roleSelect = this.inputQuery(plainSelect);
-		
-		//create second statement
-		SQLSelect sqlselect = new SQLSelect();
-		sqlselect.setPlainSelect(plainSelect);
-		sqlselect.setProc(proc);
-		sqlselect.accept(secure);
-		PlainSelect securedSelect = sqlselect.getPlainSelect();
-		
 		List<String> bodylist = new ArrayList<>();
-		bodylist.add(roleSelect.toString().concat(";"));
-		bodylist.add(securedSelect.toString().concat(";"));
+		for(int i=0; i<proc.getBody().size(); i++) {
+			Select select = (Select) parserManager.parse(new StringReader(proc.getBody().get(i)));
+			PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
+			
+			
+			//create first statement
+			PlainSelect roleSelect = this.inputQuery(plainSelect);
+			
+			//create second statement
+			SQLSelect sqlselect = new SQLSelect();
+			sqlselect.setPlainSelect(plainSelect);
+			sqlselect.setProc(proc);
+			sqlselect.accept(secure);
+			PlainSelect securedSelect = sqlselect.getPlainSelect();
+			
+			
+			bodylist.add(roleSelect.toString().concat(";"));
+			bodylist.add(securedSelect.toString().concat(";"));
+		}
+		
 		procedure.setBody(bodylist);
 		//System.out.println(role_checking_function(policy, procedure));
 		System.out.println(role_checking_function(policy, procedure));
@@ -238,16 +263,20 @@ public class Demo {
 			}
 		}
 		
-		List<String> body = new ArrayList<String>();
-		body.add(this.getBodyProcedure(s));
-		proc.setBody(body);
+		
+		proc.setBody(this.getBodyProcedure(s));
 		proc.setParameters(param_list);
 		return proc;
 	}
 	
-	public String getBodyProcedure(String s) {
+	public List<String> getBodyProcedure(String s) {
+		List<String> list = new ArrayList<String>();
 		String a = s.substring(s.indexOf("BEGIN")+6, s.indexOf("END"));
-		return a;
+		String[] part = a.split(";");
+		for(int i=0; i<part.length; i++) {
+			list.add(part[i]);
+		}
+		return list;
 	}
 	
 public PlainSelect inputQuery(PlainSelect plainSelect) {

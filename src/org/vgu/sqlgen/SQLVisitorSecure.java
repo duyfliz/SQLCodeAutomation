@@ -27,6 +27,7 @@ public class SQLVisitorSecure implements SQLVisitor {
 		CaseExpression caseExpression = new CaseExpression();
 		
 		if (!(item.getExpression() instanceof Function)) {
+//			if(item.getExpression().)
 			Column col = (Column) item.getExpression();
 			col.setTable(table);
 			Alias name = new Alias(col.getColumnName());
